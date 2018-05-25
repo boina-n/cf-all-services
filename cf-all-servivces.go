@@ -35,10 +35,10 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "all-services",
-				HelpText: "cf all-routes",
+				HelpText: "cf all-services",
 
 				UsageDetails: plugin.Usage{
-					Usage: "all-routes\n   cf all-routes",
+					Usage: "all-services\n   cf all-services",
 				},
 			},
 		},
@@ -47,7 +47,7 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "space_name,service_name,app_name,guid,activity"
+	header := "space_name,service_name,service_type,bound,activity_last_30_days"
 	fmt.Println(header)
 
 	var nextURL interface{}
@@ -57,41 +57,35 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 		json, _ := cfcurl.Curl(cliConnection, nextURL.(string))
 		resources := toJSONArray(json["resources"])
 
-		// Loop in all space for service instances url in order to list the services for each space
-
 		for _, i := range resources {
 			res := toJSONObject(i)
 			entity := toJSONObject(res["entity"])
-
 			spacename := entity["name"].(string)
 			service_instances_url := entity["service_instances_url"].(string)
 
 			json, _ := cfcurl.Curl(cliConnection, service_instances_url)
 			resources := toJSONArray(json["resources"])
 
-			// loop in each services of all space
 			for _, i = range resources {
 
 				res := toJSONObject(i)
 				entity := toJSONObject(res["entity"])
-				//metadata := toJSONObject(res["metadata"])
 
 				service_name := entity["name"].(string)
-				//service_url := metadata["url"].(string)
 				service_bindings_url := entity["service_bindings_url"].(string)
+				service_url := entity["service_url"].(string)
+
+				req, _ := cfcurl.Curl(cliConnection, service_url)
+				entity1 := toJSONObject(req["entity"])
+				service_type := entity1["label"].(string)
 
 				json, _ := cfcurl.Curl(cliConnection, service_bindings_url)
-				total_results := fmt.Sprint(json["total_results"])
-
-				if total_results == "0" {
-
-					var record interface{}
-					record = spacename + "," + service_name
-					fmt.Println(record)
-				}
-
 				resources := toJSONArray(json["resources"])
 
+				var guid string
+				var bound string
+				var event string
+				bound = "no"
 				for _, i = range resources {
 
 					res := toJSONObject(i)
@@ -99,25 +93,23 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					app_url := entity["app_url"].(string)
 
 					json, _ = cfcurl.Curl(cliConnection, app_url)
-					entity1 := toJSONObject(json["entity"])
 					metadata := toJSONObject(json["metadata"])
-					guid := metadata["guid"].(string)
-					app_name := entity1["name"].(string)
+					guid = metadata["guid"].(string)
+					bound = "yes"
 					json1, _ := cfcurl.Curl(cliConnection, "/v2/events?q=actee:"+guid)
 					total_results := fmt.Sprint(json1["total_results"])
-					event := "yes"
-					if total_results == "0" {
-						event = "No"
+					event = "no"
+					if total_results != "0" {
+						event = "yes"
+						break
 					}
-
-					var record1 interface{}
-					record1 = spacename + "," + service_name + "," + app_name + "," + guid + "," + event
-					fmt.Println(record1)
 				}
+				var record1 interface{}
+				record1 = spacename + "," + service_name + "," + service_type + "," + bound + "," + event
+				fmt.Println(record1)
 			}
 		}
 		nextURL = json["next_url"]
-
 	}
 }
 
