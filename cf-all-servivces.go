@@ -47,7 +47,7 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "space_name,service_name,service_type,bound,activity_last_30_days"
+	header := "space_name,service_name,service_type,bound,guid,activity_last_30_days"
 	fmt.Println(header)
 
 	var nextURL interface{}
@@ -105,7 +105,7 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					}
 				}
 				var record1 interface{}
-				record1 = spacename + "," + service_name + "," + service_type + "," + bound + "," + event
+				record1 = spacename + "," + service_name + "," + service_type + "," + bound + "," + guid + "," + event
 				fmt.Println(record1)
 			}
 		}
