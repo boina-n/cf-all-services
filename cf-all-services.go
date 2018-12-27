@@ -113,7 +113,7 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					}
 
 					var record1 interface{}
-					record1 = organization + "," + spacename + "," + service_name + "," + service_guid + " " + service_type + "," + bound + "," + app_guid + "," + event
+					record1 = organization + "," + spacename + "," + service_name + "," + service_guid + "," + service_type + "," + bound + "," + app_guid + "," + event
 					fmt.Println(record1)
 				}
 			}
