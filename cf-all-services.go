@@ -46,7 +46,7 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "organization_name,space_name,service_guid,service_name,service_type,bound,app_guid,activity_last_30_days"
+	header := "organization_name,space_name,service_name,service_guid,service_type,bound,app_guid,activity_last_30_days"
 	fmt.Println(header)
 	var nextURL interface{}
 	nextURL = "/v2/organizations"
