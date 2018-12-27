@@ -23,7 +23,7 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 		Name: "all-services",
 		Version: plugin.VersionType{
 			Major: 1,
-			Minor: 0,
+			Minor: 1,
 			Build: 1,
 		},
 		MinCliVersion: plugin.VersionType{
@@ -46,12 +46,13 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "organization,space_name,service_name,service_type,bound,guid,activity_last_30_days"
+	header := "organization_name,space_name,service_guid,service_name,service_type,bound,app_guid,activity_last_30_days"
 	fmt.Println(header)
 	var nextURL interface{}
 	nextURL = "/v2/organizations"
 
 	for nextURL != nil {
+
 		json, _ := cfcurl.Curl(cliConnection, nextURL.(string))
 		resources := toJSONArray(json["resources"])
 
@@ -62,7 +63,6 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 			organization := entity["name"].(string)
 			json, _ := cfcurl.Curl(cliConnection, spaceURL)
 			resources := toJSONArray(json["resources"])
-
 			for _, k := range resources {
 				res := toJSONObject(k)
 				entity := toJSONObject(res["entity"])
@@ -78,6 +78,7 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					entity := toJSONObject(res["entity"])
 
 					service_name := entity["name"].(string)
+					service_guid := entity["service_guid"].(string)
 					service_bindings_url := entity["service_bindings_url"].(string)
 					service_url := entity["service_url"].(string)
 
@@ -88,7 +89,7 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					json, _ := cfcurl.Curl(cliConnection, service_bindings_url)
 					resources := toJSONArray(json["resources"])
 
-					var guid string
+					var app_guid string
 					var bound string
 					var event string
 					bound = "no"
@@ -100,9 +101,9 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 
 						json, _ = cfcurl.Curl(cliConnection, app_url)
 						metadata := toJSONObject(json["metadata"])
-						guid = metadata["guid"].(string)
+						app_guid = metadata["guid"].(string)
 						bound = "yes"
-						json1, _ := cfcurl.Curl(cliConnection, "/v2/events?q=actee:"+guid)
+						json1, _ := cfcurl.Curl(cliConnection, "/v2/events?q=actee:"+app_guid)
 						total_results := fmt.Sprint(json1["total_results"])
 						event = "no"
 						if total_results != "0" {
@@ -112,12 +113,13 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					}
 
 					var record1 interface{}
-					record1 = organization + "," + spacename + "," + service_name + "," + service_type + "," + bound + "," + guid + "," + event
+					record1 = organization + "," + spacename + "," + service_name + "," + service_guid + " " + service_type + "," + bound + "," + app_guid + "," + event
 					fmt.Println(record1)
 				}
 			}
-			nextURL = json["next_url"]
+
 		}
+		nextURL = json["next_url"]
 	}
 }
 
