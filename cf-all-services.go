@@ -15,6 +15,10 @@ func (c *AllServicesPlugin) Run(cliConnection plugin.CliConnection, args []strin
 
 		c.getRoutes(cliConnection)
 
+		if args[1] == "all-services" {
+
+			c.getRoutes(cliConnection)
+		}
 	}
 
 }
@@ -47,69 +51,82 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "space_name,service_name,service_type,bound,guid,activity_last_30_days"
+	header := "organization,space_name,service_name,service_type,bound,guid,activity_last_30_days"
 	fmt.Println(header)
-
 	var nextURL interface{}
-	nextURL = "/v2/organizations/6c3d5da1-4e4b-48cb-8d6f-d2cc89708f64/spaces"
-	for nextURL != nil {
+	nextURL = "/v2/organizations"
 
+	for nextURL != nil {
 		json, _ := cfcurl.Curl(cliConnection, nextURL.(string))
 		resources := toJSONArray(json["resources"])
 
-		for _, i := range resources {
-			res := toJSONObject(i)
+		for _, j := range resources {
+			res := toJSONObject(j)
 			entity := toJSONObject(res["entity"])
-			spacename := entity["name"].(string)
-			service_instances_url := entity["service_instances_url"].(string)
+			spaceURL := entity["spaces_url"].(string)
+			organization := entity["name"].(string)
+			//spaces_url = "/v2/organizations/6c3d5da1-4e4b-48cb-8d6f-d2cc89708f64/spaces"
+			for nextURL != nil {
 
-			json, _ := cfcurl.Curl(cliConnection, service_instances_url)
-			resources := toJSONArray(json["resources"])
-
-			for _, i = range resources {
-
-				res := toJSONObject(i)
-				entity := toJSONObject(res["entity"])
-
-				service_name := entity["name"].(string)
-				service_bindings_url := entity["service_bindings_url"].(string)
-				service_url := entity["service_url"].(string)
-
-				req, _ := cfcurl.Curl(cliConnection, service_url)
-				entity1 := toJSONObject(req["entity"])
-				service_type := entity1["label"].(string)
-
-				json, _ := cfcurl.Curl(cliConnection, service_bindings_url)
+				json, _ := cfcurl.Curl(cliConnection, spaceURL)
 				resources := toJSONArray(json["resources"])
 
-				var guid string
-				var bound string
-				var event string
-				bound = "no"
-				for _, i = range resources {
-
+				for _, i := range resources {
 					res := toJSONObject(i)
 					entity := toJSONObject(res["entity"])
-					app_url := entity["app_url"].(string)
+					spacename := entity["name"].(string)
+					service_instances_url := entity["service_instances_url"].(string)
 
-					json, _ = cfcurl.Curl(cliConnection, app_url)
-					metadata := toJSONObject(json["metadata"])
-					guid = metadata["guid"].(string)
-					bound = "yes"
-					json1, _ := cfcurl.Curl(cliConnection, "/v2/events?q=actee:"+guid)
-					total_results := fmt.Sprint(json1["total_results"])
-					event = "no"
-					if total_results != "0" {
-						event = "yes"
-						break
+					json, _ := cfcurl.Curl(cliConnection, service_instances_url)
+					resources := toJSONArray(json["resources"])
+
+					for _, i = range resources {
+
+						res := toJSONObject(i)
+						entity := toJSONObject(res["entity"])
+
+						service_name := entity["name"].(string)
+						service_bindings_url := entity["service_bindings_url"].(string)
+						service_url := entity["service_url"].(string)
+
+						req, _ := cfcurl.Curl(cliConnection, service_url)
+						entity1 := toJSONObject(req["entity"])
+						service_type := entity1["label"].(string)
+
+						json, _ := cfcurl.Curl(cliConnection, service_bindings_url)
+						resources := toJSONArray(json["resources"])
+
+						var guid string
+						var bound string
+						var event string
+						bound = "no"
+						for _, i = range resources {
+
+							res := toJSONObject(i)
+							entity := toJSONObject(res["entity"])
+							app_url := entity["app_url"].(string)
+
+							json, _ = cfcurl.Curl(cliConnection, app_url)
+							metadata := toJSONObject(json["metadata"])
+							guid = metadata["guid"].(string)
+							bound = "yes"
+							json1, _ := cfcurl.Curl(cliConnection, "/v2/events?q=actee:"+guid)
+							total_results := fmt.Sprint(json1["total_results"])
+							event = "no"
+							if total_results != "0" {
+								event = "yes"
+								break
+							}
+						}
+
+						var record1 interface{}
+						record1 = organization + "," + spacename + "," + service_name + "," + service_type + "," + bound + "," + guid + "," + event
+						fmt.Println(record1)
 					}
 				}
-				var record1 interface{}
-				record1 = spacename + "," + service_name + "," + service_type + "," + bound + "," + guid + "," + event
-				fmt.Println(record1)
 			}
+			nextURL = json["next_url"]
 		}
-		nextURL = json["next_url"]
 	}
 }
 
