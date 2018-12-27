@@ -46,7 +46,7 @@ func (c *AllServicesPlugin) GetMetadata() plugin.PluginMetadata {
 
 func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args ...string) {
 
-	header := "organization_name,space_name,service_name,service_guid,service_type,bound,app_guid,activity_last_30_days"
+	header := "organization_name,space_name,service_name,service_instance_guid,service_type,bound,app_guid,activity_last_30_days"
 	fmt.Println(header)
 	var nextURL interface{}
 	nextURL = "/v2/organizations"
@@ -76,9 +76,10 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 
 					res := toJSONObject(l)
 					entity := toJSONObject(res["entity"])
+					metadata := toJSONObject(res["metadata"])
 
 					service_name := entity["name"].(string)
-					service_guid := entity["service_guid"].(string)
+					service_instance_guid := metadata["guid"].(string)
 					service_bindings_url := entity["service_bindings_url"].(string)
 					service_url := entity["service_url"].(string)
 
@@ -113,7 +114,7 @@ func (c *AllServicesPlugin) getRoutes(cliConnection plugin.CliConnection, args .
 					}
 
 					var record1 interface{}
-					record1 = organization + "," + spacename + "," + service_name + "," + service_guid + "," + service_type + "," + bound + "," + app_guid + "," + event
+					record1 = organization + "," + spacename + "," + service_name + "," + service_instance_guid + "," + service_type + "," + bound + "," + app_guid + "," + event
 					fmt.Println(record1)
 				}
 			}
